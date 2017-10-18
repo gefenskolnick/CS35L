@@ -1,2 +1,4 @@
 # CS35L-UCLA
-Software Construction Laboratory
+Prof. Eggert  
+TA: Sucharitha Prabhakar  
+Spring 2017
