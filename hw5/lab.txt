@@ -1,0 +1,54 @@
+
+1, 2
+Basic idea is to first check for errors, including reporting an error from and to are not the same length, or if from has duplicate bytes, and number of arguments is not 2. 
+Then get a character either by buffered input getchar or unbuffered input read. Use nested for loop to check if the char is in the 'from' operand. 
+If so, output the corresponding char in the same position in 'to' operand. If not, output itself.
+
+----------------------------------------------------------------------------
+
+3. 
+$gcc tr2b.c -o tr2b
+$gcc tr2u.c -o tr2u
+$dd if=/dev/urandom of=infile.txt bs=5120 count=1000
+	get 5120 bytes of characters generated from /dev/urandom, and repeated the generated chunk for 1000 times and store to infile.txt
+
+(b) $strace -o tr2bstrace1.txt ./tr2b 'a' 'b' < infile.txt
+(a) $strace -o tr2bstrace2.txt ./tr2b 'a' 'b' < infile.txt > tmp2.txt
+(b) $strace -o tr2ustrace1.txt ./tr2u 'a' 'b' < infile.txt
+(a) $strace -o tr2ustrace2.txt ./tr2u 'a' 'b' < infile.txt > tmp1.txt
+//file tr2ustrace1.txt and tr2ustace2.txt are too large (430MB)
+
+Open tr2bstrace1.txt, we see "read(0, "\v\212?DpC#\2108 \20d\336/l\276E\"\273\236\202\356z\344\356\2449\307\2\45;F\5"..., 65536) = 65536"
+getchar calls read function to read in 65536 bytes into buffer at a time.
+
+In comparison, the 'read' functionin tr2u reads 1 bytes into buffer at a time. The rest of bytes are left unbuffered.
+
+----------------------------------------------------------------------------
+
+4. 
+[classzfu@lnxsrv07 ~/35l/week5]$ time ./tr2u 'a' 'x' < infile.txt > tmp1.txt
+
+real    0m6.181s
+user    0m0.259s
+sys     0m5.816s
+[classzfu@lnxsrv07 ~/35l/week5]$ time ./tr2b 'a' 'x' < infile.txt > tmp2.txt
+
+real    0m0.239s
+user    0m0.184s
+sys     0m0.010s
+
+real time - time elapseed between invovation and termination
+user time - how much CPU time did your program in user space (outside the kernal)
+sys time - how much time was spent in OS/supervisor mode (doing system call)
+
+As expected, tr2u uses much more time, especially in 'sys', due to its myriads of system calls (write() and read()).
+
+----------------------------------------------------------------------------
+
+Problem encountered:
+For the generated 5MB file, there are many EOF("\377") character in the middle of the file.
+My original implementation of tr2b use the eof as the indication for the end of input.
+As a result, the process of copy stop even the file does not end.
+
+Solution:
+I fix tr2b by using if(feof(stdin)) statment to indicate the end of input, and ferror(stdin) for the input error.

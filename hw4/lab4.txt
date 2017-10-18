@@ -1,0 +1,182 @@
+---Apply the patch and reproduce the bug---
+
+$ cd 35l/hw4
+$ wget http://web.cs.ucla.edu/classes/spring17/cs35L/assign/coreutils-with-bug.tar.gz
+download the tar file
+
+$ tar -xv coreutils-with-bug.tar.gz
+untar the file verbosely
+
+$ ./configure --prefix=/u/eng/class/classzfu/35l/hw4/install-coreutils-with-bug
+configure the coreutils
+
+$ make
+In file included from utimecmp.c:41:0:
+utimens.h:2:5: error: conflicting types for 'futimens'
+ int futimens (int, char const *, struct timespec const [2]);
+     ^
+In file included from utimecmp.h:25:0,
+                 from utimecmp.c:25:
+/usr/include/sys/stat.h:373:12: note: previous declaration of 'futimens' was here
+ extern int futimens (int __fd, const struct timespec __times[2]) __THROW;
+            ^
+make[2]: *** [utimecmp.o] Error 1
+make[2]: Leaving directory `/w/home.14/class/classzfu/35l/hw4/coreutils-with-bug/lib'
+make[1]: Leaving directory `/w/home.14/class/classzfu/35l/hw4/coreutils-with-bug/lib'
+make[1]: *** [install] Error 2
+make: *** [install-recursive] Error 1
+
+Error messages occur. The error is caused by the function naming conflict of the 'futimens' function in utimens.h with the 'futimens' in stat.h. 
+The c language does not allow function overloading like c++, so we need to rename the futtimens function and tee function in various source files.
+
+$ cd ..
+$ wget http://web.cs.ucla.edu/classes/spring17/cs35L/assign/coreutils.diff
+$ cd coreutils-with-bug/
+$ patch -p0 < ../coreutils.diff
+Apply the patch to all the source files
+
+$ ./configure --prefix=/u/eng/class/classzfu/35l/hw4/install-coreutils-with-bug
+configure the coreutils
+$ make
+$ make install
+configure, build and install again
+
+$ tmp=$(mktemp -d)
+$ cd $tmp
+$ touch -d '1918-11-11 11:00 GMT' wwi-armistice
+$ touch now
+$ sleep 1
+$ touch now1
+$ TZ=UTC0 ~/35l/hw4/install-coreutils-with-bug/bin/ls -lt --full-time wwi-armistice now now1
+-rw-r--r-- 1 classzfu class 0 1918-11-11 11:00:00.000000000 +0000 wwi-armistice
+-rw-r--r-- 1 classzfu class 0 2017-04-26 21:55:10.328783494 +0000 now1
+-rw-r--r-- 1 classzfu class 0 2017-04-26 21:54:47.464411283 +0000 now
+
+Use the installed buggy bersion of ls to list the files. The oldest file wwi-armistice is listed on the top, which is wrong.
+
+
+---debug---
+
+Since we want to debug, we need to make sure that the cflags or the optimization options in the configure file in coreutils-with-bugs
+do not interfere with the information collection for the use of debugging. Hence, I search for CFLAGS in configure file, change the 
+"-g -O2" option to "-g -Og"
+
+The problem with ls -lt is the sorting, which should correctly list files in descending order (from newest modified file to the oldest). 
+I open the source file ls.c in coreutils-with-bug/src/ls.c. The only function prototype related to sort is static void sort_files (void). 
+So I should set the breakpoint at the function sort_files (line: 2953).
+
+The basic idea is to trace back the function calls: tracing from the most basic function, like main, to the ones that it calls.
+
+$ gdb ~/35l/week4_2/coreutils-with-bug-install/bin/ls
+$ b sort_files
+set breakpoint for function sort_files
+
+$ run -lt
+run with option -lt
+
+$ s
+$ (type for Enter 6 times)
+qsort (files, files_index, sizeof *files, func);
+$ print func
+$1 = (int (*)(V, V)) 0x405c7a <compare_mtime>
+
+Check for the info about func, which is compare_mtime. Check for the algorithm in compare_mtime, which causes the ordering problem of listing.
+
+$ b compare_mtime
+$ run -lt
+$ y
+$ s
+$ (press Enter for 7 times) 
+Breakpoint 2, compare_mtime (a=0x61a0f0, b=0x61a1a0) at ls.c:2884
+2884    static int compare_mtime (V a, V b) { return cmp_mtime (a, b, xstrcoll); }
+
+The second breakpoint is hit. The compare_mtime function is based on cmp_mtime function, so set breakpoint at cmp_mtime function.
+
+$ b cmp_mtime
+$ run -lt
+$ y
+$ s
+$ (press Enter for 8 times) 
+Breakpoint 3, cmp_mtime (a=0x61a0f0, b=0x61a1a0, cmp=0x405a00 <xstrcoll>)
+    at ls.c:2880
+2880      int diff = timespec_cmp (get_stat_mtime (&b->stat),
+
+$ b timespec_cmp
+$ run -lt
+$ y
+$ s
+$ (press Enter for many times)
+Breakpoint 4, timespec_cmp (a=..., b=...) at ../lib/timespec.h:48
+48        int diff = a.tv_sec - b.tv_sec;
+(gdb) info args
+a = {tv_sec = 1493504654, tv_nsec = 778909054}
+b = {tv_sec = -1613826000, tv_nsec = 0}
+(gdb) info locals
+diff = 0
+(gdb) s
+49        return diff ? diff : a.tv_nsec - b.tv_nsec;
+(gdb) info args
+a = {tv_sec = 1493504654, tv_nsec = 778909054}
+b = {tv_sec = -1613826000, tv_nsec = 0}
+(gdb) info locals
+diff = -1187636642
+
+int diff = a.tv_sec - b.tv_sec; a.tv_sec = 1493504654; b.tv_sec = -1613826000; diff cannot be -1187636642, diff should be positive. 
+Overflow takes place. Go to ../lib/timespec.h (line 48) to fix the problem. 
+
+$ cd ~/35l/week4_2/coreutils-with-bug/lib/
+$ emacs timespec.h
+$ M-g g 48
+
+change the function to following
+
+	static inline int
+	timespec_cmp (struct timespec a, struct timespec b)
+	{
+	  int diff;
+
+	  if ((a.tv_sec > 0) & (b.tv_sec < 0) & ((int)(a.tv_sec - b.tv_sec) < 0))
+	    diff = ~(1 << 31);
+	  else if ((a.tv_sec < 0) & (b.tv_sec > 0) & ((int)(a.tv_sec - b.tv_sec) > 0))
+	    diff = (1 << 31);
+	  else
+	    diff = a.tv_sec - b.tv_sec;
+	  return diff ? diff : a.tv_nsec - b.tv_nsec;
+	}
+
+When overflow occur, the revised function will return the value, maximum int for positive overflow, minimum int for negative overflow. 
+
+
+$ cd .. (go to the root directory for coreutils)
+$ diff -u lib/timespec.h~ lib/timespec.h > lab4.diff
+$ ./configure ----prefix=/u/eng/class/classzfu/35l/hw4/new_install
+$ make
+$ make install
+
+$ tmp=$(mktemp -d)
+$ cd $tmp
+$ touch -d '1918-11-11 11:00 GMT' wwi-armistice
+$ touch now
+$ sleep 1
+$ touch now1
+$ TZ=UTC0 /u/eng/class/classzfu/35l/hw4/new_install/bin/ls -lt --full-time wwi-armistice now now1
+-rw-r--r-- 1 classzfu class 0 2017-04-30 01:55:57.505722917 +0000 now1
+-rw-r--r-- 1 classzfu class 0 2017-04-30 01:55:43.058489834 +0000 now
+-rw-r--r-- 1 classzfu class 0 1918-11-11 11:00:00.000000000 +0000 wwi-armistice
+$ cd
+$ rm -fr $tmp
+Now ls -lt functions correctly.
+
+
+---how SEASnet server does---
+$ cd
+$ touch -d '1918-11-11 11:00 GMT' wwi-armistice
+$ touch now
+$ sleep 1
+$ touch now1
+$ TZ=UTC0 ls -lt --full-time wwi-armistice now now1
+-rw-r--r-- 1 classzfu class 0 2054-12-17 17:28:16.000000000 +0000 wwi-armistice
+-rw-r--r-- 1 classzfu class 0 2017-04-30 04:20:50.556016000 +0000 now1
+-rw-r--r-- 1 classzfu class 0 2017-04-30 04:20:49.551926000 +0000 now
+
+The built-in ls in SEASnet server creates the wwi-armistice file with wrong date in the future. I think it is also caused by overflow error. 

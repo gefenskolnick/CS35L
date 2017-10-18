@@ -1,0 +1,50 @@
+#!/bin/bash
+
+dir=$1
+restore="$IFS"
+IFS=$'\n'
+counter=0
+declare -a arr
+
+files=`find $dir -maxdepth 1 -type f | sed "s/\(.*\)\/\(.*\)/\2/g" | grep -E "^[^\.]" | sort`
+hfiles=`ls -a $dir | grep '^\.' | sort`
+
+for hfile in $hfiles
+do
+    if [ -L "$dir/$hfile" ]; then
+	:
+    elif [ ! -f "$dir/$hfile" ]; then
+	:
+    elif [ ! -r "$dir/$hfile" ]; then
+	echo "$hfile is not readable" 1>&2
+    else
+	arr[$counter]="$dir/$hfile"
+	counter=$counter+1
+    fi
+done
+
+for file in $files
+do
+    if [ ! -r "$dir/$file" ]
+    then
+        echo "$file is not readable" 1>&2
+    else
+        arr[$counter]="$dir/$file"
+        counter=$counter+1
+    fi
+done
+
+for (( i=0; i<$counter; i++ ))
+do
+    for (( j=i+1; j<$counter; j++ ))
+    do
+        cmp -s "${arr[$i]}" "${arr[$j]}"
+        if [ $? == 0 ]
+        then
+            ln -fP "${arr[$i]}" "${arr[$j]}"
+	        arr[$j]=arr[$i]
+        fi
+    done
+done
+
+IFS=$restore

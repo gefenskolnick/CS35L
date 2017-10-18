@@ -1,0 +1,156 @@
+1. man -k <keyword> for search of keyword in description part of man page of 
+the commands. man -K <keyword> for search globally.
+
+2. Use which cp and which wc. which command is used for searching of 
+executables. cp locates at /usr/bin/cp, and wc locates at /usr/bin/wc.
+
+3. Use command "echo $PATH" to find locations of executable programs, which 
+is /usr/lib64/qt-3.3/bin, /u/eng/class/classzfu/perl5/bin, /usr/lib64/
+ccache, /usr/local/bin, /usr/bin, /usr/X11R6/bin, /u/eng/class/classzfu/bin. 
+Then use "find <locations above> -name ? -executable", and X, w, [ are 
+found. Use whatis X, whatis w, and whatis [. 
+w (1)                - Show who is logged on and what they are doing.
+[ (1)                - bash built-in commands, see bash(1)
+but nothing is shown for X (nothing show in man X, also), which is weird.
+
+4. Use command "readlink /usr/bin/emacs", get "/etc/alternatives/emacs".
+
+5. Use "man chmod". 
+g+s: permit group to save
+o-x: deny the permission for others to execute
+
+6. find -mtime -20
+-mtime is the time of modification, which will be rounded down. -20 means 
+less than 20 days after rounding down. Toooooo many files, so i cannot 
+display the output.
+
+7. find -type d -mtime -20
+-type d specifies to search for directories.
+
+output after searching in home directory:
+.
+./perl5
+./Desktop
+./Desktop/$RECYCLE.BIN
+./Desktop/$RECYCLE.BIN/$R1C9I3J
+./Desktop/$RECYCLE.BIN/$ROUUEOD
+./Desktop/$RECYCLE.BIN/$RLY71XR
+./Desktop/$RECYCLE.BIN/$ROVCRD6
+./Desktop/$RECYCLE.BIN/$RFV6NNX
+./Desktop/$RECYCLE.BIN/$RJ8GFZZ
+./Desktop/$RECYCLE.BIN/$RJW15AH
+./Desktop/$RECYCLE.BIN/$RRVOTVN
+./Documents
+./Downloads
+./Downloads/$RECYCLE.BIN
+./.cache/abrt
+./.ccache
+./.ccache/tmp
+./.ccache/4
+./.ccache/d
+./.ccache/e
+./.ccache/6
+./.ccache/2
+./.ccache/1
+./.ccache/9
+./.ccache/c
+./.ccache/5
+./.ccache/7
+./.ccache/a
+./week1
+./hw1
+./.emacs.d/auto-save-list
+
+8. command: "which find", get "/usr/bin/find". command: "find /usr/bin -type l"
+There are so many lines, so the last command can be "find /usr/bin -type l | 
+nl" to list the index of lines. The total number of symbolic links is 294 in 
+/usr/bin.
+
+9. command: cd /usr/bin, first to the specified directory. command: ls -t 
+-l, list all regular files, directories and symbolic links in this directory 
+in the order of modification time from new to old. Hence, the last file with 
+- instead of d or l in the front is the oldest regular file, which is 
+"libfreeblpriv3.so".
+
+10. By reading the locale manuel, /usr/lib/locale/locale-archive is the 
+usual default locale archive location. /usr/share/i18n/locales is the usual 
+default path for locale definition.
+
+11. command: emacs, then command: c-h a sort, which allows us to search for 
+keyword in commands. 
+Output:
+Buffer-menu-sort              M-x ... RET
+   Sort Tabulated List entries by the column at point.
+sort-columns                  M-x ... RET
+   Sort lines in region alphabetically by a certain range of columns.
+sort-fields                   M-x ... RET
+   Sort lines in region lexicographically by the ARGth field of each
+   line.
+sort-lines                    M-x ... RET
+   Sort lines in region alphabetically; argument means descending
+   order.
+sort-numeric-fields           M-x ... RET
+   Sort lines in region numerically by the ARGth field of each line.
+sort-pages                    M-x ... RET
+   Sort pages in region alphabetically; argument means descending
+   order.
+sort-paragraphs               M-x ... RET
+   Sort paragraphs in region alphabetically; argument means descending
+   order.
+sort-regexp-fields            M-x ... RET
+   Sort the text in the region region lexicographically.
+tabulated-list-col-sort       M-x ... RET
+   Sort Tabulated List entries by the column of the mouse click E.
+tabulated-list-sort           M-x ... RET
+   Sort Tabulated List entries by the column at point.
+
+12. command: c-h c-h, to get what options that can be typed after c-h. 
+command: c-h b, to find the key translations of key bindings. Then, command: 
+c-x o, to move the cursor to the another window. 
+C-M-a           beginning-of-defun
+C-M-b           backward-sexp
+C-M-c           exit-recursive-edit
+C-M-d           down-list
+C-M-e           end-of-defun
+C-M-f           forward-sexp
+C-M-h           mark-defun
+
+13. command: c-h k c-g
+output:
+C-g runs the command keyboard-quit, which is an interactive compiled
+Lisp function.
+
+It is bound to C-g.
+
+(keyboard-quit)
+
+Signal a `quit' condition.
+During execution of Lisp code, this character causes a quit directly.
+At top-level, as an editor command, this simply beeps.
+
+14. command: c-h f yank
+description:
+yank is an interactive compiled Lisp function.
+
+It is bound to C-y, <S-insertchar>, <S-insert>, <menu-bar> <edit>
+<paste>.
+
+(yank &optional ARG)
+
+Reinsert ("paste") the last stretch of killed text.
+More precisely, reinsert the most recent kill, which is the
+stretch of killed text most recently killed OR yanked.  Put point
+at the end, and set mark at the beginning without activating it.
+With just C-u as argument, put point at beginning, and mark at end.
+With argument N, reinsert the Nth most recent kill.
+
+When this command inserts text into the buffer, it honors the
+`yank-handled-properties' and `yank-excluded-properties'
+variables, and the `yank-handler' text property.  See
+`insert-for-yank-1' for details.
+
+See also the command `yank-pop' (M-y).
+
+15. the dired in emacs (c-x d) shows the "total used in directory 345912 
+available 11769808", ls -l does not shows that. And it seems that ls -l does 
+not have the enough space to list the entries entirely.

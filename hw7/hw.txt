@@ -1,0 +1,26 @@
+
+1. Secure
+The network is secure because the asymmetic (public-key) encryption system ensures the confidentialiy of the communcation.
+The message sent to either end is encrypted by the public key.
+The only way to decrypt bytes going across the network is by the private key.
+So, this system is different from symmetic key encryption.
+
+(1) Secure
+The key typed is insufficient for others to figure out the private key.
+Even if I type the passphrase with the exact same letters or digits, the resulting keys are different.
+
+(2) Insecure
+If the system directionary is located on the USB drive, the private key along with the system is also stored on the USB. 
+Hence, they can get the private key to decrypt the bytes on the network if they are smart enough.
+
+-------------------------------------------------------------------------------
+
+2.
+The problem is that the public key is sent along with the tar file.
+As a result, a hacker can replace the original public key to be a new public key that is used to along with his private key.
+So, gpg --verify command only verifies that the public key inside the tar file can decrypt the detached signature and the resulting tar matches the existing tar.
+Nothing to do with personal creation of the tar file.
+
+The solution can be that post the public key on the Internet, so the receiver of the signature can verify the validation of the public key in the tar file.
+If keys are the same, the gpg --verify command will work.
+If not, it means that the public key sent in tar file is tampered.

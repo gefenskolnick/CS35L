@@ -1,0 +1,263 @@
+1. webpage dictionary
+
+sort /usr/share/dict/words > words
+sort the words file and store the sorted file in the lab2 directionary
+
+wget http://web.cs.ucla.edu/classes/spring17/cs35L/assign/assign2.html
+get the course assignment webpage
+
+tr -c 'A-Za-z' '[\n*]' < assign2.html > out1.html
+-c get the complement set of 'A-Za-z', which is any char other than alphabetical letters. Replace the char with \n, which is newline character. * means that the number of newline char in set2 will matches that in set1.
+
+tr -cs 'A-Za-z' '[\n*]' < assign2.html > out2.html
+-s, squeeze-repeats replace each input sequence of a repeated character that is listed in SET1 with a single occurrence of that character, so there with be no consecutive newlines. Hence, there is single empty line (the line with a single newline char) on the top of the file, since the original assign2.html starts with two non-alphabets, followed by a single word on each line.
+
+tr -cs 'A-Za-z' '[\n*]' < assign2.html | sort > out3.html
+sort the letters in alphabetical order
+
+tr -cs 'A-Za-z' '[\n*]' < assign2.html | sort -u > out4.html
+eliminate the repeated ones
+
+tr -cs 'A-Za-z' '[\n*]' < assign2.html | sort -u | comm - words > out5.html
+Compare the sorted letters in the webpage and the sorted dictionary and display them in three columns. Col1 is the word only in file1, col2 is the ones only in file2 col3 is the ones in both files.
+
+tr -cs 'A-Za-z' '[\n*]' < assign2.html | sort -u | comm -23 - words > out6.html
+Appear only words in file1, which is the webpage,  but not in file2, words.
+
+
+
+
+2. Hawaiian dictionary
+
+wget http://mauimapp.com/moolelo/hwnwdseng.htm -O hawaiian.html
+get the html file
+
+grep -E '<td>.*</td>' hawaiian.html > 1.html
+find lines with the <td>...</td> pattern in the webpage and store them into the 1.html file
+
+sed '/<td><\/td>/d' 1.html > 2.html
+get rid of lines with <td></td> with no words between the tags
+
+sed 's/<td>\(.*\)<\/td>/\1/g' 2.html > 3.html
+delete <td> </td> tags around the words and keep the words
+
+sed -n 2~2p 3.html > 4.html
+get every 2th line starting with line 2, -n will avoid the duplication of the original file 3.html
+
+sed 's/<u>\(.\)<\/u>/\1/g' 4.html > 5.html
+get the underlined single letter between <u> and </u>
+
+tr , '\n' < 5.html > 6.html
+treat , as the separation of two words
+
+sed 's/^[ \t]*//' 6.html > 7.html
+delete tabs in front of each line
+
+tr ' ' '\n' < 7.html | sed '/^$/d' > 8.html
+' ' indicates separate words before and after the space, sed '/^$/d' is used to eliminate empty lines
+
+sed "s/\`/'/g" 8.html > 9.html
+replace ` (accent), with ' (apostrophe)
+
+tr [:upper:] [:lower:] < 9.html > 10.html
+replace every upper case letter with its corresponding lower case letter
+
+sed "/[^pkmnwlhaeiou']/d" 10.html > 11.html
+delete every word other than pkmnwlhaeiou'
+
+sort -u 11.html > hwords
+sort the Hawaiin words in order
+
+
+
+3. buildworld
+
+#!/bin/bash
+
+grep -E '<td>.*</td>' |
+
+
+sed '/<td><\/td>/d' |
+
+
+sed 's/<td>\(.*\)<\/td>/\1/g' |
+
+
+sed -n 2~2p |
+
+
+sed 's/<u>\(.\)<\/u>/\1/g' |
+
+
+tr , '\n' |
+
+
+sed 's/^[ \t]*//' |
+
+
+tr ' ' '\n' |
+
+
+sed '/^$/d' |
+
+
+sed "s/\`/'/g" |
+
+
+tr [:upper:] [:lower:] |
+
+
+sed "/[^pkmnwlhaeiou']/d" |
+
+
+sort -u
+
+
+
+
+4. check by using hwords
+
+misspelled Eng with upper case cast to lower case: 
+[classzfu@lnxsrv09 ~/35l/hw2/new2]$ cat assign2.html | tr -cs 'A-Za-z' '[\n*]' | tr '[:upper:]' '[:lower:]' | sort -u | comm -23 - words | wc -w
+38
+
+store the misEng file:
+cat assign2.html | tr -cs 'A-Za-z' '[\n*]' | tr '[:upper:]' '[:lower:]' | sort -u | comm -23 - words > misEng
+
+misspelled Eng without case casting:
+[classzfu@lnxsrv09 ~/35l/hw2/new2]$ cat assign2.html | tr -cs 'A-Za-z' '[\n*]' | sort -u | comm -23 - words | wc -w
+80
+
+misspelled Hawaiian after case casting to lower:
+[classzfu@lnxsrv09 ~/35l/hw2/new2]$ cat assign2.html | tr -cs "\'pkmnwlhaeiou" '[\n*]' | tr '[:upper:]' '[:lower:]' | sort -u | comm -23 - hwords | wc -w
+199
+
+store the misHaw file:
+cat assign2.html | tr -cs "\'pkmnwlhaeiou" '[\n*]' | tr '[:upper:]' '[:lower:]' | sort -u | comm -23 - hwords > misHaw
+
+misspelled Eng but true for Hawaiian:
+[classzfu@lnxsrv09 ~/35l/hw2/new2]$ cat misEng | tr -cs "'pkmnwlhaeiou" '[\n*]' | sort -u | comm -12 - hwords > EngHaw
+[classzfu@lnxsrv09 ~/35l/hw2/new2]$ wc -w < EngHaw
+6
+[classzfu@lnxsrv09 ~/35l/hw2/new2]$ cat EngHaw
+e
+halau
+i
+lau
+po
+wiki
+
+misspelled Haw but true for English:
+[classzfu@lnxsrv09 ~/35l/hw2/new2]$ cat misHaw | tr -cs 'A-Za-z' '[\n*]' | sort -u | comm -12 - words > HaiEng
+[classzfu@lnxsrv09 ~/35l/hw2/new2]$ wc -w < HaiEng
+109
+[classzfu@lnxsrv09 ~/35l/hw2/new2]$ cat HaiEng
+a
+ail
+ain
+ake
+al
+ale
+alen
+all
+amine
+amp
+ample
+an
+aph
+aul
+awk
+e
+ea
+ee
+el
+em
+emp
+en
+ep
+epa
+h
+ha
+han
+hap
+he
+hei
+hell
+hem
+hen
+hi
+hin
+ho
+how
+howe
+ia
+ie
+ile
+imp
+in
+ion
+iou
+k
+keep
+kin
+l
+lan
+le
+lea
+li
+like
+line
+link
+ll
+ln
+lo
+lowe
+m
+mail
+man
+me
+men
+mi
+ml
+mo
+mp
+n
+name
+ne
+nee
+no
+non
+nu
+num
+o
+om
+on
+one
+op
+ope
+open
+owe
+own
+p
+pe
+pell
+people
+plea
+pu
+u
+ui
+ula
+ule
+ume
+ump
+un
+uni
+w
+wa
+wan
+we
+wh
+wha
+who
+wi
+wo

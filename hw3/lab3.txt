@@ -1,0 +1,57 @@
+#There are two folders: coreutils-7.6, the untarred one from downloaded tar;
+the other is coreutils-install, dir for install (make install).
+
+
+
+Download the file and copy it to the hw3 directionary
+$ cp ~/Downloads/coreutils-7.6.tar.gz .
+
+unzip the compresssed file
+$ tar -xzf coreutils-7.6.tar.gz
+
+make a directionary for coretil to be installed
+$ mkdir coreutils-install
+
+goto the directionary of coreutils-7.6 and configure with prefix
+$ ./configure --prefix=/u/eng/class/classzfu/35l/hw3/coreutils-install
+
+then build and install
+$ make
+$ make install
+
+go the bin directionary of the coreutils-install folder
+$ cd ../coreutils-install/bin
+
+test to identify the problem to see the difference in output
+$ export LC_ALL='en_US.UTF-8'
+$ ls -l ls
+-rwxr-xr-x 1 classzfu class 457296 Apr 22 16:49 ls
+$ ./ls -l ls
+-rwxr-xr-x 1 classzfu class 457296 2017-04-22 16:49 ls
+the installed version generates YYYY-MM-DD date instead of traditional Unix one
+
+
+
+then try to modify the ls.c file
+emacs ../../coreutils-7.6/src/ls.c
+
+edit the file based on the - and + sign, - for deletion and + for addition
+delete case_long_iso_time_style: (or search for the line number by M+g g)
+	C+s case_long_iso_time_style: C+a C+k
+delete for loop: 
+	C+s for (i = 0 C+a DOWN C+space DOWN DOWN DOWN DOWN DOWN DOWN DOWN BackS
+	LEFT Enter Tab
+type the added contents:
+	long_time_format[i] = dcgettext (NULL, long_time_format[i], LC_TIME);
+save and close ls.c:
+	C+x C+s C+x C+c
+
+build the modified version but not copy to the final dir (coreutils-install)
+$ cd ..
+$ make
+
+change to /src (the fixed version) and create a file with a year old
+$ cd src
+$ touch tmp -d "Apr 19 2016"
+$ ./ls tmp -l
+-rw-r--r-- 1 classzfu class 0 Apr 19  2016 tmp

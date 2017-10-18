@@ -1,0 +1,78 @@
+
+/*Zipeng Fu*/
+
+2. check out version 3.0
+	$ git checkout v3.0 -b quote
+	M       src/cmp.c
+	M       src/diff.c
+	M       src/diff3.c
+	M       src/dir.c
+	M       src/sdiff.c
+	M       src/util.c
+	Switched to a new branch 'quote'
+
+3. install my change into this new branach 'quote'
+	$ patch -pnum < ../quote-3.0-patch.txt
+check if the patch is installed successfully: open src/cmp.c, no ` in effective codes other than comments
+
+4. 5.
+Use emacs C-x 4 a for every .c files I have modified
+
+2017-06-06  Zipeng Fu  <classzfu@lnxsrv04.seas.ucla.edu>
+
+    * src/cmp.c (try_help, specify_ignore_initial, usage, main):
+    * src/diff.c (main, try_help, option_help_msgid, specify_value)
+    (compare_files):
+    * src/diff3.c (main, try_help, option_help_msgid, usage)
+    (read_diff):
+    * src/dir.c (compare_names):
+    * src/sdiff.c (try_help, usage, check_child_status, main):
+    * src/util.c (finish_output):
+    Quote 'like this' or "like this" instead of `like this'.
+
+6. commit my changes to the new branch
+	$ git commit -a –F ChangeLog
+
+7. generate a patch
+	$ git format-patch -1 --stdout > ../formatted-patch.txt
+
+8. Parter: Shenjing Yue
+Seasnet user: classjsh
+
+Use the step similar to Question 14 in the lab section
+
+	$ mkdir tmpdir2
+	$ git checkout v3.0 -b other
+
+Patch his formatted patch
+	$ git am formatted.patch.txt
+
+build
+	$ ./bootstrap
+	$ ./configure
+	$ make
+
+test like as the procedures in the lab
+	$ make check
+	$ ./src/diff . -
+	$ ./src/diff --help
+
+Succeed
+
+9. verify my ChangeLog entry works
+	$ make distdir
+before make instruction I run:
+	$ ./configure
+check the ChangeLog in the new dir:
+	$ cd diffutils-3.0.1-c613
+	$ emacs ChangeLog
+my ChangeLog appear at the top along with Prof. Eggert logs below
+
+10.
+clone the emacs dir from remote repo:
+	$ cd ..
+	$ git clone https://git.savannah.gnu.org/git/emacs.git
+I use the linux virtual machine
+merge found  2015-01-25 12:19:27
+Author: Joakim Verona
+Merge branch 'master' into xwidget

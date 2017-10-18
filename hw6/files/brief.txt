@@ -1,0 +1,55 @@
+record only 1-test.ppm
+
+time ./srt 1-test.ppm >1-test.ppm.tmp
+
+real    0m57.985s
+user    0m57.900s
+sys     0m0.001s
+
+
+
+##change main.c
+
+1. make sure nthread can be greater than 1
+2. Data structure to store thread id
+pthread_t *tid = (pthread_t*) malloc (sizeof(pthread_t) * nthreads);
+3. check if tid is NULL. if NULL, print error and exit.
+
+
+//nthreads as global variable
+
+pthread_t *tid = (pthread_t*) malloc (sizeof(pthread_t) * nthreads);
+
+if (!tid){
+	fprintf(stderr, "Memory alloc error");
+	return 1;
+}
+
+int temp[nthreads];
+for ( n1 = 0; n1 < nthreads; n1++) {
+	temp [n1] = n1;
+}
+
+int h;
+for ( h = 0; h < nthreads; n++) {
+	pthread_create (&tid[h], NULL, threadFunc, temp+h);
+}
+
+int i;
+for ( i = 0; h < nthreads; h++)
+	pthread_join(tid[i], NULL);
+
+int j, l;
+for (j = 0; j < width; j++)
+	for l < height
+		printf ("%.0f %.0f %.0f\n", scaled_color[j][l][0], scaled_color[j][l][2], scaled_color[j][l][3])
+	printf("\n");
+
+free_scene(&scene);
+free(tid);
+if (ferror(stdout) || fclose(stdout) != 0)
+	fprintf(stderr, "output error");
+	return 1;
+
+##Makefile
+LDLIBS should have -lpthread

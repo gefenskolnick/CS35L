@@ -1,0 +1,158 @@
+
+1. setup steps
+
+Open the virtual machine software running ubuntu system or directly run the system. Then use the terminal to execute the following commands.
+	$ dpkg --get-selections | grep openssh
+	
+
+Notice that still the openssh-server needs to be installed.
+	$ sudo apt-get install openssh-server
+
+(the password for the ubuntu system user may be needed)
+Press Y to continue
+Type the dpkg command to confirm the installation
+	$ dpkg --get-selections | grep openssh
+		openssh-client install
+		openssh-server install
+		openssh-sftp-server install
+
+-------------------------------------------------------------------------------
+
+2. server steps
+
+first generate the key pairs of the server
+
+	ubuntu@ubuntu:~$ ssh-keygen
+	Generating public/private rsa key pair.
+	Enter file in which to save the key (/home/ubuntu/.ssh/id_rsa): (Press Enter directly to save key pairs to the default location)
+	Enter passphrase (empty for no passphrase): memes
+	Enter same passphrase again: memes
+	Your identification has been saved in /home/ubuntu/.ssh/id_rsa.
+	Your public key has been saved in /home/ubuntu/.ssh/id_rsa.pub.
+	The key fingerprint is:
+	SHA256:iNBnb9ElriP31nIQXFUD2EvyIWCEgvXaNuYMM5r8iN8 ubuntu@ubuntu
+	The key's randomart image is:
+	+---[RSA 2048]----+
+	|    o.  o+o =ooo.|
+	|   o ....+ B +  .|
+	|  . . +.. = = o  |
+	|   . +oo o . o   |
+	|    .=o=S .      |
+	|  . o O+.o o     |
+	|   +   o  + o    |
+	|  . +    . o     |
+	| ..o E           |
+	+----[SHA256]-----+
+
+To get the public key
+	$ cat ~/.ssh/id_rsa.pub
+To get the private key
+	$ cat ~/.ssh/id_rsa id_rsa.pub
+
+Add user and the corresponding password. 
+(We set the home directory to be mark and the username to be fzp) 
+(set the passphrase for username fzp to be memes1)
+	$ sudo useradd -d /home/mark -m fzp
+	$ sudo passwd
+		memes1
+		memes1
+
+Change directory to the user directory with homedir_name mark: 
+	$ cd /home/mark
+
+Create .ssh directory for new user
+	$ sudo mkdir .ssh
+
+Change owenership and permission on .ssh directionary
+	$ sudo chown -R fzp .ssh (change ownership. client owner of the file)
+	$ sudo chmod 700 .ssh
+
+Check the server IP address: 
+	$ ipconfig
+		inet adddress: 10.97.85.46
+
+-------------------------------------------------------------------------------
+
+3. client steps
+
+now use another computer with a different IP address to act as the client
+
+1) generate public and private keys
+	$ ssh-keygen
+
+copy the public key to server for keey-based client authentication (instead of password-based one, in which password sent may be compromised)
+passphrase 'memes' should be entered
+	$ ssh-copy-id -i fzp@10.97.85.46
+
+add private key to authentication agent (ssh-agent)
+no prompt for passphrase then after
+	$ ssh-add
+
+The overall effect:
+	ubuntu@ubuntu:~$ ssh-keygen
+	Generating public/private rsa key pair.
+	Enter file in which to save the key (/home/ubuntu/.ssh/id_rsa): ssh-copy-id fzp@10.97.85.46
+	Enter passphrase (empty for no passphrase): memes1
+	Enter same passphrase again: memes1
+	Your identification has been saved in ssh-copy-id fzp@10.97.85.46.
+	Your public key has been saved in ssh-copy-id fzp@10.97.85.46.pub.
+	The key fingerprint is:
+	SHA256:EJI5nHka0d49ZiHXEDs42zmH2TfQn+DOYaycTAqbVUQ ubuntu@ubuntu
+	The key's randomart image is:
+	+---[RSA 2048]----+
+	|   .oB.   +E     |
+	|    O.o...+...   |
+	|     *..o+oo...  |
+	|    . ...+**o....|
+	|       .S+*oo=o..|
+	|        = =o*... |
+	|       o . = o   |
+	|                 |
+	|                 |
+	+----[SHA256]-----+
+
+2) SSH to server (user:fzp, pasword:memes1)
+	ubuntu@ubuntu:~$ ssh fzp@10.97.85.46
+	The authenticity of host '10.97.85.46 (10.97.85.46)' can't be established.
+	ECDSA key fingerprint is SHA256:sgwj06nmfiPIVpMXdyu4c9AWsqywSmlCEI9F1qEY1mA.
+	Are you sure you want to continue connecting (yes/no)? yes
+	Warning: Permanently added '10.97.85.46' (ECDSA) to the list of known hosts.
+	fzp@10.97.85.46's password: memes1
+	Welcome to Ubuntu 16.10 (GNU/Linux 4.8.0-22-generic x86_64)
+
+	 * Documentation:  https://help.ubuntu.com
+	 * Management:     https://landscape.canonical.com
+	 * Support:        https://ubuntu.com/advantage
+
+
+
+	The programs included with the Ubuntu system are free software;
+	the exact distribution terms for each program are described in the
+	individual files in /usr/share/doc/*/copyright.
+
+	Ubuntu comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
+	applicable law.
+
+Now SSH with the option -X to enable X Window System for graphical interface
+	ubuntu@ubuntu:~$ ssh -X fzp@10.97.85.46
+	fzp@10.97.85.46's password: memes1
+	Welcome to Ubuntu 16.10 (GNU/Linux 4.8.0-22-generic x86_64)
+
+	 * Documentation:  https://help.ubuntu.com
+	 * Management:     https://landscape.canonical.com
+	 * Support:        https://ubuntu.com/advantage
+
+
+	Last login: Mon May 15 15:56:28 2017 from 10.97.85.48
+
+Run the testing command to show X Window System works correctly, applications like firefox browser is poped up on the client
+	$ xterm
+	$ firefox
+
+To check whether the firefox process is loaded on server instead of on the client, we can check the process running on the server by typing the following commands on the server
+	$ ps -aux | grep firefox
+		fzp 28121 12.7 2.8 990876 229780 pts/2 Sl+ 16:06 0:02 /usr/lib/firefox/firefox
+		ubuntu 28203 0.0 0.0 21296 1028 pts/1 S+ 16:06 0:00 grep --color=auto firefox
+
+To see what user 'fzp' is running
+	$ ps -aux | grep fzp
